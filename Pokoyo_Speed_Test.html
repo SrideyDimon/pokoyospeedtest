@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Pokoyo Speed Test · mobile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* Mobile-first reset & base */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-deep: #020b1a;
+      --blue-dark: #040f24;
+      --blue-mid: #0a1f3d;
+      --blue-glass: rgba(10, 40, 90, 0.45);
+      --blue-glass2: rgba(15, 55, 120, 0.3);
+      --blue-accent: #1a6fff;
+      --blue-bright: #4da6ff;
+      --blue-glow: #00aaff;
+      --blue-ice: #a8d8ff;
+      --border-glass: rgba(100, 180, 255, 0.2);
+      --border-glass2: rgba(100, 180, 255, 0.08);
+      --text-main: #e8f4ff;
+      --text-muted: rgba(168, 216, 255, 0.6);
+      --text-dim: rgba(100, 160, 220, 0.5);
+      --download: #00e5ff;
+      --upload: #7b5fff;
+      --ping: #00ff9d;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--blue-deep);
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(26,111,255,0.2) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 70%, rgba(0,170,255,0.12) 0%, transparent 60%),
+        linear-gradient(180deg, #020b1a 0%, #030d20 100%);
+      position: relative;
+    }
+
+    /* animated grid (subtle on mobile) */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(26,111,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,111,255,0.03) 1px, transparent 1px);
+      background-size: 30px 30px;
+      animation: gridShift 16s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gridShift {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(30px); }
+    }
+
+    /* floating orbs reduced size */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(40px);
+      pointer-events: none;
+    }
+    .orb1 { width: 200px; height: 200px; background: rgba(26,111,255,0.1); top: -40px; left: -40px; }
+    .orb2 { width: 250px; height: 250px; background: rgba(0,170,255,0.07); bottom: -40px; right: -40px; }
+    .orb3 { width: 150px; height: 150px; background: rgba(123,95,255,0.08); top: 30%; left: 5%; }
+
+    /* main card — full width on mobile */
+    .app-window {
+      width: 100%;
+      max-width: 480px;        /* comfortable phone width */
+      background: rgba(8, 20, 50, 0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--border-glass);
+      border-radius: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,180,255,0.1) inset;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-radius 0.2s;
+    }
+
+    /* title bar smaller */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(10, 30, 70, 0.5);
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .win-buttons { display: flex; gap: 6px; }
+    .win-btn { width: 11px; height: 11px; border-radius: 50%; cursor: default; }
+    .win-close { background: #ff5f57; }
+    .win-min { background: #febc2e; }
+    .win-max { background: #28c840; }
+
+    .logo-icon {
+      width: 24px; height: 24px;
+      background: linear-gradient(135deg, var(--blue-accent), var(--blue-glow));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 10px rgba(26,111,255,0.6);
+    }
+    .logo-icon svg { width: 14px; height: 14px; fill: white; }
+
+    .app-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--blue-ice);
+    }
+
+    #qualityBadge {
+      font-size: 9px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+
+    /* scrollable content with less padding */
+    .content {
+      padding: 16px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* gauge adjusted */
+    .gauge-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    #speedCanvas { width: 100%; height: 100%; }
+
+    .speed-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -44%);
+      text-align: center;
+    }
+    .speed-number {
+      font-family: 'Orbitron', monospace;
+      font-size: 40px;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 0 0 15px var(--blue-glow);
+    }
+    .speed-unit {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+    .speed-label {
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+    }
+
+    /* metric cards row — side by side */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .metric-card {
+      background: var(--blue-glass);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 12px 4px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      opacity: 0.5;
+    }
+    .metric-card.download::before { background: linear-gradient(90deg, transparent, var(--download), transparent); }
+    .metric-card.upload::before { background: linear-gradient(90deg, transparent, var(--upload), transparent); }
+    .metric-card.ping::before { background: linear-gradient(90deg, transparent, var(--ping), transparent); }
+
+    .metric-label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      font-family: 'Orbitron', monospace;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .metric-value.download-val { color: var(--download); }
+    .metric-value.upload-val { color: var(--upload); }
+    .metric-value.ping-val { color: var(--ping); }
+    .metric-sub { font-size: 9px; color: var(--text-muted); }
+
+    /* progress compact */
+    .progress-section {
+      background: var(--blue-glass2);
+      border: 1px solid var(--border-glass2);
+      border-radius: 40px;
+      padding: 12px 16px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 10px;
+    }
+    .progress-phase { font-family: 'Orbitron', monospace; color: var(--text-muted); }
+    .progress-pct { color: var(--blue-bright); }
+    .progress-track { height: 4px; background: rgba(100,180,255,0.15); border-radius: 4px; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue-accent), var(--blue-glow)); border-radius: 4px; box-shadow: 0 0 6px var(--blue-glow); }
+
+    /* wave canvas */
+    .wave-line {
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      margin: -6px 0;
+    }
+    .wave-line.visible { opacity: 0.8; }
+    .wave-line canvas { width: 100%; height: 100%; display: block; }
+
+    /* server row */
+    .server-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--blue-glass2);
+      border: 1px solid var(--border-glass2);
+      border-radius: 24px;
+      font-size: 10px;
+    }
+    .server-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--ping); box-shadow: 0 0 5px var(--ping);
+    }
+    .server-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 8px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* start button */
+    .btn-container { display: flex; justify-content: center; margin: 4px 0 2px; }
+    .start-btn {
+      position: relative;
+      width: 140px;
+      height: 46px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(26,111,255,0.3), rgba(0,170,255,0.2));
+      border: 1px solid rgba(77,166,255,0.4);
+      border-radius: 40px;
+      backdrop-filter: blur(8px);
+      transition: 0.2s;
+    }
+    .start-btn:active .btn-bg { transform: scale(0.96); background: rgba(26,111,255,0.4); }
+    .btn-text {
+      position: relative;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--blue-ice);
+      text-shadow: 0 0 8px rgba(0,170,255,0.6);
+    }
+    .start-btn:disabled { opacity: 0.5; }
+
+    /* status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 6px 8px;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ping);
+      box-shadow: 0 0 6px var(--ping);
+      flex-shrink: 0;
+    }
+    .status-dot.idle { background: var(--text-dim); box-shadow: none; }
+    .status-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    /* footer — stacked a bit on narrow */
+    .footer {
+      background: rgba(5, 15, 40, 0.6);
+      border-top: 1px solid var(--border-glass);
+      padding: 10px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 9px;
+    }
+    .footer-info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .info-icon { width: 12px; height: 12px; opacity: 0.6; }
+    .info-label { font-family: 'Orbitron', monospace; color: var(--text-dim); text-transform: uppercase; font-size: 8px; }
+    .info-value { color: var(--text-muted); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .separator { width: 1px; height: 16px; background: var(--border-glass2); }
+    .footer-brand { font-family: 'Orbitron', monospace; font-size: 7px; color: rgba(100,160,220,0.3); }
+
+    /* badge visible */
+    .quality-badge.visible { display: inline-flex; }
+    .quality-badge {
+      display: none;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 30px;
+      font-size: 9px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .quality-badge.excellent { color: #00ff9d; border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.08); }
+    .quality-badge.good { color: var(--download); border-color: rgba(0,229,255,0.3); }
+    .quality-badge.fair { color: #ffc107; border-color: rgba(255,193,7,0.3); }
+    .quality-badge.poor { color: #ff5252; border-color: rgba(255,82,82,0.3); }
+  </style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="app-window">
+    <!-- title -->
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <div class="win-buttons">
+          <div class="win-btn win-close"></div>
+          <div class="win-btn win-min"></div>
+          <div class="win-btn win-max"></div>
+        </div>
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z"/></svg>
+        </div>
+        <span class="app-title">POKOYO</span>
+      </div>
+      <div id="qualityBadge" class="quality-badge"></div>
+    </div>
+
+    <div class="content">
+      <!-- gauge -->
+      <div class="gauge-section">
+        <div class="gauge-container">
+          <canvas id="speedCanvas" width="200" height="200"></canvas>
+          <div class="speed-display">
+            <div class="speed-number" id="speedNum">0</div>
+            <div class="speed-unit">Мбит/с</div>
+            <div class="speed-label" id="speedPhase">готов</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- wave line -->
+      <div class="wave-line" id="waveLine">
+        <canvas id="waveCanvas" height="32"></canvas>
+      </div>
+
+      <!-- metrics 3 cards -->
+      <div class="metrics-row">
+        <div class="metric-card download" id="cardDown">
+          <div class="metric-label">Загрузка</div>
+          <div class="metric-value download-val" id="downVal">—</div>
+          <div class="metric-sub">Мбит/с</div>
+        </div>
+        <div class="metric-card upload" id="cardUp">
+          <div class="metric-label">Отдача</div>
+          <div class="metric-value upload-val" id="upVal">—</div>
+          <div class="metric-sub">Мбит/с</div>
+        </div>
+        <div class="metric-card ping" id="cardPing">
+          <div class="metric-label">Пинг</div>
+          <div class="metric-value ping-val" id="pingVal">—</div>
+          <div class="metric-sub">мс</div>
+        </div>
+      </div>
+
+      <!-- progress bar -->
+      <div class="progress-section">
+        <div class="progress-header">
+          <div class="progress-phase" id="phaseLabel">Ожидание</div>
+          <div class="progress-pct" id="phasePct">0%</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- server + start button -->
+      <div class="server-row">
+        <div class="server-dot"></div>
+        <span class="server-name">CLOUDFLARE · FAST.NET</span>
+        <span style="font-size:8px; color:var(--text-dim);">auto</span>
+      </div>
+
+      <div class="btn-container">
+        <button class="start-btn" id="startBtn" onclick="startTest()">
+          <div class="btn-bg"></div>
+          <span class="btn-text" id="btnLabel">ЗАПУСК</span>
+        </button>
+      </div>
+
+      <!-- status -->
+      <div class="status-bar">
+        <div class="status-dot idle" id="statusDot"></div>
+        <div class="status-text" id="statusText">Нажмите ЗАПУСК</div>
+      </div>
+    </div>
+
+    <!-- footer with ip/city/isp (real data) -->
+    <div class="footer">
+      <div class="footer-info">
+        <div class="info-item">
+          <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="info-label">IP</span>
+          <span class="info-value" id="ipDisplay">загрузка...</span>
+        </div>
+        <div class="separator"></div>
+        <div class="info-item">
+          <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="info-label">Город</span>
+          <span class="info-value" id="cityDisplay">загрузка...</span>
+        </div>
+        <div class="separator"></div>
+        <div class="info-item">
+          <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+          <span class="info-label">ISP</span>
+          <span class="info-value" id="ispDisplay">—</span>
+        </div>
+      </div>
+      <div class="footer-brand">POKOYO ©2025</div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ---------- GAUGE (adjusted to 200px) ----------
+      const canvas = document.getElementById('speedCanvas');
+      const ctx = canvas.getContext('2d');
+      const W = 200, H = 200, CX = 100, CY = 108;  // center slightly lower for better look
+      const R = 78, RI = 62;
+
+      function drawGauge(value, maxVal = 1000, phase = 'idle') {
+        ctx.clearRect(0, 0, W, H);
+        const startAngle = Math.PI * 0.75;
+        const endAngle = Math.PI * 2.25;
+        const totalArc = endAngle - startAngle;
+
+        // ticks
+        for (let i = 0; i <= 30; i++) {
+          const ratio = i / 30;
+          const angle = startAngle + ratio * totalArc;
+          const major = i % 6 === 0;
+          const len = major ? 8 : 4;
+          const ro = R - 2;
+          const ri2 = ro - len;
+          const x1 = CX + Math.cos(angle) * ro;
+          const y1 = CY + Math.sin(angle) * ro;
+          const x2 = CX + Math.cos(angle) * ri2;
+          const y2 = CY + Math.sin(angle) * ri2;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+          ctx.strokeStyle = major ? 'rgba(77,166,255,0.5)' : 'rgba(77,166,255,0.2)';
+          ctx.lineWidth = major ? 1.2 : 0.6;
+          ctx.stroke();
+        }
+
+        // background arc
+        ctx.beginPath();
+        ctx.arc(CX, CY, RI, startAngle, endAngle);
+        ctx.strokeStyle = 'rgba(20,50,100,0.5)';
+        ctx.lineWidth = 12;
+        ctx.stroke();
+
+        if (value > 0) {
+          const ratio = Math.min(value / maxVal, 1);
+          const fillEnd = startAngle + ratio * totalArc;
+          let color1 = '#1a6fff', color2 = '#00aaff';
+          if (phase === 'upload') { color1 = '#7b5fff'; color2 = '#a855f7'; }
+          if (phase === 'ping') { color1 = '#00ff9d'; color2 = '#00e5ff'; }
+
+          const grad = ctx.createLinearGradient(
+            CX + Math.cos(startAngle)*RI, CY + Math.sin(startAngle)*RI,
+            CX + Math.cos(fillEnd)*RI, CY + Math.sin(fillEnd)*RI
+          );
+          grad.addColorStop(0, color1);
+          grad.addColorStop(1, color2);
+
+          ctx.save();
+          ctx.shadowBlur = 14;
+          ctx.shadowColor = color2;
+          ctx.beginPath();
+          ctx.arc(CX, CY, RI, startAngle, fillEnd);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 12;
+          ctx.stroke();
+          ctx.restore();
+
+          // needle dot
+          const nx = CX + Math.cos(fillEnd) * RI;
+          const ny = CY + Math.sin(fillEnd) * RI;
+          ctx.save();
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = color2;
+          ctx.beginPath();
+          ctx.arc(nx, ny, 5, 0, 2*Math.PI);
+          ctx.fillStyle = '#fff';
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // small labels (skip on tiny)
+        ctx.fillStyle = 'rgba(100,160,220,0.3)';
+        ctx.font = '6px Orbitron';
+        ctx.fillText('0', CX + Math.cos(startAngle)*(RI-20), CY + Math.sin(startAngle)*(RI-20));
+        ctx.fillText('500', CX + Math.cos(startAngle+0.5*totalArc)*(RI-20), CY + Math.sin(startAngle+0.5*totalArc)*(RI-20)-4);
+        ctx.fillText('1K', CX + Math.cos(endAngle-0.05)*(RI-20), CY + Math.sin(endAngle-0.05)*(RI-20)-6);
+      }
+      drawGauge(0);
+
+      // ---------- WAVE ----------
+      const waveCanvas = document.getElementById('waveCanvas');
+      const wCtx = waveCanvas.getContext('2d');
+      let wavePhase = 0, waveRunning = false, waveColor = '#1a6fff';
+      function resizeWave() {
+        waveCanvas.width = waveCanvas.offsetWidth || 200;
+        waveCanvas.height = 32;
+      }
+      function drawWaveLoop() {
+        if (!waveRunning) return;
+        resizeWave();
+        const w = waveCanvas.width;
+        wCtx.clearRect(0, 0, w, 32);
+        wCtx.beginPath();
+        for (let x = 0; x <= w; x++) {
+          const y = 16 + Math.sin((x * 0.06) + wavePhase) * 6 + Math.sin((x * 0.03) + wavePhase*0.8) * 4;
+          x === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+        }
+        wCtx.strokeStyle = waveColor;
+        wCtx.lineWidth = 1.3;
+        wCtx.globalAlpha = 0.6;
+        wCtx.stroke();
+        wCtx.beginPath();
+        for (let x = 0; x <= w; x++) {
+          const y = 16 + Math.cos((x * 0.04) + wavePhase*1.3) * 5 + Math.sin((x * 0.05) + wavePhase) * 3;
+          x === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+        }
+        wCtx.strokeStyle = waveColor;
+        wCtx.lineWidth = 0.8;
+        wCtx.globalAlpha = 0.3;
+        wCtx.stroke();
+        wCtx.globalAlpha = 1;
+        wavePhase += 0.07;
+        requestAnimationFrame(drawWaveLoop);
+      }
+
+      // ---------- UTILS ----------
+      function setProgress(pct, label) {
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('phasePct').innerText = Math.round(pct) + '%';
+        document.getElementById('phaseLabel').innerText = label;
+      }
+      function setStatus(text, state = 'active') {
+        document.getElementById('statusText').innerText = text;
+        const dot = document.getElementById('statusDot');
+        dot.className = 'status-dot ' + (state === 'idle' ? 'idle' : state === 'error' ? 'error' : '');
+      }
+      function animateNumber(el, from, to, duration = 300, decimals = 1) {
+        const start = performance.now();
+        const step = (ts) => {
+          const t = Math.min((ts - start) / duration, 1);
+          const val = from + (to - from) * (t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2);
+          el.textContent = decimals === 0 ? Math.round(val) : val.toFixed(decimals);
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+
+      let currentSpeed = 0;
+      function animateGauge(to, phase) {
+        const from = currentSpeed;
+        const start = performance.now();
+        const dur = 300;
+        const el = document.getElementById('speedNum');
+        function step(ts) {
+          const t = Math.min((ts - start) / dur, 1);
+          const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+          currentSpeed = from + (to - from) * eased;
+          el.textContent = currentSpeed < 10 ? currentSpeed.toFixed(1) : Math.round(currentSpeed);
+          drawGauge(currentSpeed, 1000, phase);
+          if (t < 1) requestAnimationFrame(step);
+          else currentSpeed = to;
+        }
+        requestAnimationFrame(step);
+      }
+
+      // ---------- IP INFO ----------
+      async function loadIPInfo() {
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          const data = await res.json();
+          document.getElementById('ipDisplay').textContent = data.ip || '—';
+          const city = [data.city, data.country_name].filter(Boolean).join(', ');
+          document.getElementById('cityDisplay').textContent = city || '—';
+          document.getElementById('ispDisplay').textContent = (data.org || '—').replace(/^AS\d+\s+/, '').substring(0, 18);
+        } catch {
+          try {
+            const r2 = await fetch('https://api.ipify.org?format=json');
+            const d2 = await r2.json();
+            document.getElementById('ipDisplay').textContent = d2.ip || '—';
+            document.getElementById('cityDisplay').textContent = '—';
+          } catch {
+            document.getElementById('ipDisplay').textContent = 'нет данных';
+            document.getElementById('cityDisplay').textContent = '—';
+          }
+        }
+      }
+      loadIPInfo();
+
+      // ---------- SPEED MEASURE (same logic, slightly adapted) ----------
+      async function measurePing() {
+        const times = [];
+        for (let i = 0; i < 5; i++) {
+          const t0 = performance.now();
+          try { await fetch('https://www.cloudflare.com/cdn-cgi/trace?t=' + Date.now() + Math.random(), { cache: 'no-store', mode: 'no-cors' }); } catch {}
+          times.push(performance.now() - t0);
+          await new Promise(r => setTimeout(r, 80));
+        }
+        times.sort((a,b)=>a-b);
+        return Math.round(times.slice(1,4).reduce((s,v)=>s+v,0)/3);
+      }
+
+      async function measureDownload(onProgress) {
+        const url = 'https://speed.cloudflare.com/__down?bytes=15000000&r=' + Math.random();
+        let totalBytes = 0, t0 = performance.now(), speeds = [];
+        try {
+          const resp = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+          const reader = resp.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            totalBytes += value.byteLength;
+            const elapsed = (performance.now() - t0) / 1000;
+            if (elapsed > 0.2) {
+              const mbps = (totalBytes * 8) / (elapsed * 1e6);
+              speeds.push(mbps);
+              onProgress(mbps, totalBytes);
+            }
+          }
+        } catch (e) { console.warn(e); }
+        if (speeds.length) {
+          speeds.sort((a,b)=>b-a);
+          const top = speeds.slice(0, Math.max(2, Math.floor(speeds.length*0.3)));
+          return top.reduce((s,v)=>s+v,0)/top.length;
+        }
+        return 0;
+      }
+
+      async function measureUpload(onProgress) {
+        const chunk = new Uint8Array(1_500_000);
+        crypto.getRandomValues(chunk.slice(0, 50000));
+        let speeds = [];
+        for (let i=0; i<3; i++) {
+          const t0 = performance.now();
+          try {
+            await fetch('https://speed.cloudflare.com/__up', { method:'POST', body: chunk, cache:'no-store', signal: AbortSignal.timeout(8000) });
+          } catch {}
+          const elapsed = (performance.now()-t0)/1000;
+          if (elapsed>0.1) {
+            const mbps = (chunk.byteLength * 8) / (elapsed * 1e6);
+            speeds.push(mbps);
+            onProgress(mbps, (i+1)*chunk.byteLength);
+          }
+          await new Promise(r=>setTimeout(r,60));
+        }
+        if (speeds.length) {
+          speeds.sort((a,b)=>b-a);
+          return speeds.slice(0,2).reduce((s,v)=>s+v,0)/2;
+        }
+        return 0;
+      }
+
+      // ---------- MAIN TEST ----------
+      let testing = false;
+      window.startTest = async function() {
+        if (testing) return;
+        testing = true;
+        const btn = document.getElementById('startBtn');
+        const btnLabel = document.getElementById('btnLabel');
+        btn.disabled = true;
+        btnLabel.innerText = 'ТЕСТ...';
+
+        document.getElementById('downVal').innerText = '—';
+        document.getElementById('upVal').innerText = '—';
+        document.getElementById('pingVal').innerText = '—';
+        document.getElementById('speedPhase').innerText = 'тест';
+        document.getElementById('qualityBadge').className = 'quality-badge';
+        document.getElementById('qualityBadge').innerText = '';
+        currentSpeed = 0; drawGauge(0);
+
+        waveRunning = true; document.getElementById('waveLine').classList.add('visible'); drawWaveLoop();
+
+        // ping
+        document.getElementById('cardPing').classList.add('active');
+        document.getElementById('speedPhase').innerText = 'пинг';
+        waveColor = '#00ff9d'; setStatus('пинг...', 'active'); setProgress(5, 'пинг');
+        const ping = await measurePing();
+        document.getElementById('pingVal').innerText = ping;
+        animateGauge(Math.min(ping,200), '
