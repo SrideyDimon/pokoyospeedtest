@@ -775,4 +775,65 @@
         waveColor = '#00ff9d'; setStatus('пинг...', 'active'); setProgress(5, 'пинг');
         const ping = await measurePing();
         document.getElementById('pingVal').innerText = ping;
-        animateGauge(Math.min(ping,200), '
+        animateGauge(Math.min(ping,200), 'ping');
+        document.getElementById('cardPing').classList.remove('active');
+        setProgress(15, 'пинг ок'); setStatus(`пинг ${ping} мс`);
+        await new Promise(r=>setTimeout(r,300));
+
+        // download
+        document.getElementById('cardDown').classList.add('active');
+        document.getElementById('speedPhase').innerText = 'загрузка';
+        waveColor = '#00e5ff'; setStatus('загрузка...', 'active'); setProgress(20, 'загрузка');
+        let lastDown = 0;
+        const down = await measureDownload((mbps, bytes)=>{
+          mbps = Math.min(mbps,999); animateGauge(mbps, 'download');
+          document.getElementById('downVal').innerText = mbps.toFixed(1);
+          lastDown = mbps; setProgress(20 + Math.min(bytes/20_000_000 * 55, 55), 'загрузка');
+          setStatus(`↓ ${mbps.toFixed(1)} Мбит/с`);
+        });
+        const finalDown = down>0 ? down : lastDown;
+        document.getElementById('downVal').innerText = finalDown.toFixed(1);
+        document.getElementById('cardDown').classList.remove('active');
+        setProgress(75, 'загрузка ок'); animateGauge(Math.min(finalDown,999), 'download');
+        await new Promise(r=>setTimeout(r,400));
+
+        // upload
+        document.getElementById('cardUp').classList.add('active');
+        document.getElementById('speedPhase').innerText = 'отдача';
+        waveColor = '#7b5fff'; setStatus('отдача...', 'active'); setProgress(78, 'отдача');
+        let lastUp = 0;
+        const up = await measureUpload((mbps, bytes)=>{
+          mbps = Math.min(mbps,999); animateGauge(mbps, 'upload');
+          document.getElementById('upVal').innerText = mbps.toFixed(1);
+          lastUp = mbps; setProgress(78 + Math.min(bytes/6_000_000 * 17, 17), 'отдача');
+          setStatus(`↑ ${mbps.toFixed(1)} Мбит/с`);
+        });
+        const finalUp = up>0 ? up : lastUp;
+        document.getElementById('upVal').innerText = finalUp.toFixed(1);
+        document.getElementById('cardUp').classList.remove('active');
+        setProgress(100, 'готово');
+        animateGauge(Math.min(finalUp,999), 'upload');
+        await new Promise(r=>setTimeout(r,300));
+
+        waveRunning = false;
+        document.getElementById('waveLine').classList.remove('visible');
+        document.getElementById('speedPhase').innerText = 'готово';
+
+        let quality, qclass;
+        if (finalDown >= 100) { quality = '★ ОТЛИЧНО'; qclass = 'excellent'; }
+        else if (finalDown >= 30) { quality = '✓ ХОРОШО'; qclass = 'good'; }
+        else if (finalDown >= 10) { quality = '~ СРЕДНЕ'; qclass = 'fair'; }
+        else { quality = '✗ СЛАБЫЙ'; qclass = 'poor'; }
+        const badge = document.getElementById('qualityBadge');
+        badge.innerText = quality; badge.className = 'quality-badge ' + qclass + ' visible';
+
+        setStatus(`↓ ${finalDown.toFixed(1)} ↑ ${finalUp.toFixed(1)} ping ${ping} мс`, 'idle');
+        btn.disabled = false;
+        btnLabel.innerText = 'ПОВТОР';
+        testing = false;
+        setTimeout(()=> animateGauge(Math.min(finalDown,999), 'download'), 200);
+      };
+    })();
+  </script>
+</body>
+</html>
